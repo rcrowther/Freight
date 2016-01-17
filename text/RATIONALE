@@ -1,0 +1,183 @@
+A rationale. Or a tract. The idea is, the reasons why decisions were arrived at may be the non-FAQ to beat FAQs.
+
+== Style
+
+=== Use boring, dumb code, nowhere near the cutting-edge
+Freight has plenty of limited, uninformed, and unprofessional ideas at heart. 
+
+To counteract the mess, the code is always low-grade. 
+
+Another reason is that if code is made for boring, uninformed and unprofessional users, like the author, it is best if it works with the minimum of fuss. For example, Swing is used for the GUIs, and will be for the forseeable future. Swing needs no dependancies and will do. Moviung on from the last example, Freight will usually work by throwing in current or near-current jars. There is no immediate need for dependancy handling. Of course, many will lecture against this, and the maintenance needs of automating dependancies. But it seems a legitmate enough approach to the author to take the opposite tack, sometimes. And Freight will usually work by throwing in some jars.
+
+
+=== Dirty code is good
+Fortunately for Freight, we do not have to adhere to professional standards of presentation. This doesn't mean creating messy code because the author doesn't care. It means confessional and literate code, with deficiencies notated. It means clean code is code regarded as good in itself (it may be out conceptually). It means that working on Freight is easy, as there are TODOs littered everywhere.
+  
+
+
+== The object system
+=== Objects
+Objects are iterated using typed Visitors (see nomenclature).
+
+Visitors have the disadvantage of being hefty to build. They necessitate a visiting builder class. However, they are fully typed.
+
+Objects have been worked on until they mostly duck-type. This is for practical reasons, not reasons of theory. If Freight had extensive object typing, as early versions did, then generic classes would multiply by orders. Generics are best spared for when needed, and duck-typing can avoid clashing and complicating existing code.
+  
+
+
+
+== Nomenclature
+Visitors have odd nomenclature, in that the visitor visits some method called a visitee, or such like. Due to their extensive use here, new terms have been substituted.
+
+Taker - a visitor, which "takes" data. Often a builder.
+Giver - A method or class which can supply a taker, "giving" data
+
+Builder - a visitor with a result() and clear() methods 
+Breaker - a giver with a reset() method
+
+These next two were extensivly used in early versions of freight. As the code moved towards raw use of builders and breakers, they remain as class templating traits.
+ 
+Takeable - classes with a give() method which can accept takers
+Giveable - classes with a take() method which can accpt givers
+
+fieldSelector (was transformer) - a method which takes a taker and a giver. The method does little more than encapsulate the two, pulling approriate types from the giver for the taker. But, in each object, it defines the type of the data fields.
+
+multi... a type of any of the above which handles data as freight types
+string... a type of any of the above which handles data as strings
+
+in...
+out...
+Though not used in current nomenclature, frieght used this idea from the start. It may reappear, and is in documentation.
+
+Freight has no manic dictatorial control interests. Interfaces are in and out, depending on if freight is listening to messages (in) or doing something itself(out). Same for methodology. No concept of backend, frontend, or ends of any kind. Just in/out.
+
+ 
+== Types
+Freight defines several types for use in the object classes.
+
+These types were, in several original versions of freight, value classes classes with convenience methods. However, the convenience methods were few, and AnyType classes have a habit of resolving themselves as real unless carefully handled. So freight reverted to using the usual representations of types, e.g. timestamp being Long (not a custom Timestamp class) etc.
+
+Freight types are limited to significant variations in interface types
+So there are two types of string, because databases, for allocation reasons, like to know if they are dealing with short or long strings. The same argument applies to making datestamp a type, as databases handle datestamps as a type.
+
+The exception is Locale which, though many interfaces do not define it, is a full type. This is because Freight's Locale actions include simple serializing code for interfaces.
+ 
+Stringification of boolean values is to char 't' or 'f'. There is no overall ratonale here, but many variations e.g. JSON "true". Freight, with no overriding need for human display of data, chose a simple representation.
+
+
+== Ids
+All freight-enabled types must carry an id field
+It is simply too convenient for a class instance not to have an id, especially when interfaces return data. It may have been possible to use Java hashcodes, but these are, to some extent, built for other purposes. Best leave them to Java code.
+
+Freight ids are type Long
+Several interfaces use Long, and it seems a shame to cap them unnecessarily.
+  
+Freight ids must come first in data ordering
+this enables freight to use simple indexing and builder/taker modifications when recovering ids.
+
+Freight ids start from 1
+Some interfaces number from 1 (which?), and the code becomes intricate and error-prone if conversions are built in.
+
+
+Freight ids are only unique across a storage collection
+This potentially results in clashes, but can be enabled at the interface, so is easy there. 
+
+Why the -1 returns on ids?
+I do appreciate Option(), I do. But I hate unwrapping it.
+
+== Abstract objects
+From the first, Freight had abstract objects. Meaning, objects were viewed as sequences of fields, and the sequences could be transformed --- the representation didn't matter. So a class could become a string object.
+
+Early versions of Freight had a full iteraterable interface over object fields. While this is template as a complement to Scala collections, it was dropped. First, the iterable interface means constructing iterators over the short number of fields of an object --- while performance is not supposed to be important, it can be lost. Second, the iterable interface encouraged Schema building, which Freight wanted to avoid, because it encouraged further multiplication of methods and intricacy. Finally, usage of Freight showed the abstract objects were important, and they became the primary carrier --- far more so than the object transformations in the Scala collection (which are restricted to an occassional concatenation, and the guess-optomising inheritance system).
+
+So Freight moved to visitor-style interfaces.
+
+
+=== Givers and Takers
+Freight abstracts objects by turning them into Givers and Takers. Givers supply field values, Takers consume them.
+
+Originally, Givers and Takers had overall types. They would return or consume any field and return the value as that type e.g. if requested, a StringGiver would return a string version of a Long field. It was aniticipated that Givers and Takers would multiply, for example, there may be XML versions (return this field with a long value as "<numeric type=long>56</numeric>").
+
+But it was found that only two output types matter, String and Typed values. These are the ones that cause vast amounts of boilderplate between external interfaces. 
+
+Later, it was found that the typed versions of abstract objects was an unecessary hassle. The objects can do the conversion themselves. This makes the objects a little heavy (each has at least sixteen methods, one for each basic type, string and typed variations), but cleaned code up. Ask a Giver now to return it's field, and it can return the value either as a string or as the original type.  
+
+Givers can get fields values from... something,
+
+Giver {
+def long: Long
+def string: String
+def longStr: String
+}
+
+And Takers can accept field values,
+
+Taker {
+def long(v: Long)
+def string(v: String)
+def longStr(v: String)
+}
+
+Since the iterable interfaces were deprecated, niether interface has any idea of what field or type comes next. That is told to them by a FieldSelector.
+
+
+== Interface methods
+=== Out interfaces
+
+== out/write methods
+
+
+=== out/write methods
+Write methods, in other nomenclature. These take a giver. Givers are similar to the fundamental code of a Visitee. In Freight they are a first class object, and that's what out methods use.
+
+def <(g: Giver): Boolean
+
+Writes something to some external, beyond Freight's horizon, code.
+
+
+=== in/read methods
+Original versions of freight returned modified classes, then custom-traited classes. This is the way, perhaps the key aim, of every ORM. It is also the way of every conventional interface the author has ever seen.
+
+However, Freight has abandoned returning objects. Instead, Freight injects methods. This results in a complex, untuitive, interface,
+
+apply[A](id, (<string/multi>Giver) => Option[A])
+
+vs,
+
+get(id) : <Ducktyping Thing>
+
+Aside from the unintuitive interface, this means interface methods must be constructed twice, once for stringbuilders, once for multibuilders. And Java erases the method types, meaning polymoprhic calling is not always possible. Freight is sometimes polymorphic, as it is able to use the id parameter to establish this. Methods without distinctive paraameter types, such as foreach(), are clumbsily prefixed with multi...() or string...(). And the return is distinctly odd too. It is often Option[Unit], to indicate a true condidition with no return. Finally, the parameter syntax introduces generics when generics, in Freight's overall aims, are to be avoided.
+
+There must be advantages?
+
+Freight wriggled between two ideas with read methods. One is the classic ORM approach of returning an object,
+
+def get(id) : <Object>
+
+The other, the repeated wish to use builders,
+
+def get(id, builder)
+
+It would still be good to return an object, though, because often users would want to modify data, not simply transfer it. Is there a solution? The method call encompases both.
+
+The read syntax has an extra advantage. Several interfaces work on a transactional basis, meaning their data supply only lasts for a limited duration. This can be seen in JDBC result sets, which need close()ing after use. The same can be said of many databases. Reading lazily may go further and lock some data sources. Use of a method negates this problem. The automatic closure of resources method passing provides is arguably the right thing to do.
+
+And it also makes Freight direct coupling relatively efficient as read and write signatures match. This operation is inside-out to intuition, but,
+
+datasource1(id = 42, datasource2<() _)
+
+descriptively,
+
+datasource1.read(id = 42, datasource2.write().asMethod)
+
+Real code,
+
+ c.stringForeach( (g) => {f<(g)} )
+
+While Freight does this, it generates or reuses two classes (the wraps for the interface code), and field method calls (the Transformer). In many cases this means Freight is close to the efficiency of hand-coding, while offering toylike interface code.
+
+Another way to look at this is that, for the advantages, the parameter syntax here forces the coder to decide what to do with return data. The prescence of the method means data alone will never be returned, *something* must be done.
+
+ 
+
+= Macros and other conveniences

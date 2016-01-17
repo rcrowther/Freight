@@ -1,0 +1,26 @@
+== Ways of looking at Freight
+
+- The all-time insane use of visitors
+- An ORM without the 'R'
+- A rubbish version of '' with tacky programming
+- Programming for the unprofessional
+
+
+== JDO
+One way of regarding freight is as a JDO (Java Data Objects),
+
+https://db.apache.org/jdo/index.html
+
+JDO is a system where, by enhancing classes with annotations and extra gear, clases can be made to persist. Some differences between JDO and freight,
+
+JDO is
+- professional, heavily developed, Java-weight softare
+- offers a huge range of types
+- compared to most similar systems, is unobtrusive.
+
+Freight is
+- without the weight of professional code
+- deliberqately ugly
+- unhinged, or generalized, depending on your outlook. Any interface is fair game, and already includes 'cron' and a servlet
+
+The author might add that freight lacks Java-style documentation, which the author regards as a relief.

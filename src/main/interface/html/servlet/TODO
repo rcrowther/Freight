@@ -1,0 +1,227 @@
+= CHANGLOG
+***Check the trailing slash issue***
+***Test destroy, and change to onClose() ***
+
+isBlank on required text inputs
+make basic authentication separate from plain text authentication
+Fixed the trailing slash issue, and enforced match anchoring.
+Lifted much of the Scalatra URL code for more staid handling, user methods, and to handle redirects. 
+
+= TODO
+SEVERE: The web application [/archaicgroves] created a ThreadLocal with key of type [scala.util.DynamicVariable$$anon$1] (value [scala.util.DynamicVariable$$anon$1@6e81ead4]) and a value of type [org.apache.tomcat.util.log.SystemLogHandler] (value [org.apache.tomcat.util.log.SystemLogHandler@195508fd]) but failed to remove it when the web application was stopped. Threads are going to be renewed over time to try and avoid a probable memory leak.
+authentication
+"offline/maintenance" property and test
+Rebuild the "routes" available page to be more sophisticated and interactive
+https
+look at servlet initialization.
+Alternate backends for authentication
+Url callback for authentication (fix that slash)
+error support needs help
+Alternate method sets (rest(obj: GenObject))?
+extract those method sets
+flashmap is causing session creation. Either get rid of it, or store logons?
+need some data sources
+basic auth logoff?
+timebased basic auth logoff? http://www.keysolutions.com/NotesFAQ/howlogoff.html
+Fix prettyprints in matchers
+Where's default css? Wanted?
+- A fink we're going for guessed responses after all ('tis Scala, tis).
+- Remove isBlank in favour of source trim?
+- CSS aggregation and minifying?
+form auth need form... and to handle return...
+
+
+- salt
+"
+I am not an expert (despite what Google may think), but here is what I understand.
+
+What makes a hash function strong is it's one way nature... you can fairly straightforwardly compute a hash of a password, but given a hash, it is difficult to find the password which corresponds to it.
+
+Such hash functions, however, can be vulnerable to a dictionary attack.  Precompute the hashes for every word in a dictionary, then if you get a passwd file containing hashes, you simply have to see if any of them match.  One match, and you are in.
+
+Salts complicate this a bit.  This is a random string which is prepended to the password prior to hashing.  If you know the salt, you can still compute a dictionary, but by necessity you can't do this until you get the salt, and such computations would be specific to that salt value.
+"
+- nonce
+Send a unique number. Tested on return. Since the number changes, the supplied/requested action cann't be repeated.
+http://www.intertwingly.net/blog/1585.html
+
+ruby Basic authentication:
+http://www.sinatrarb.com/faq.html#auth
+
+Best on REST,
+http://www.infoq.com/articles/rest-introduction
+"In other words, a server should not have to retain some sort of communication state for any of the clients it communicates with beyond a single request."
+
+Use Timestamps
+Use https
+http://www.thebuzzmedia.com/designing-a-secure-rest-api-without-oauth-authentication/comment-page-1/#comment-268243
+
+== permissions
+In already
+page_callback
+path
+
+add
+access_callback
+access_arguments
+
+
+//connection-wide?
+delivery_callback/theme_callback= theme callback?
+
+  $schema['menu_router'] = array(
+    'description' => 'Maps paths to various callbacks (access, page and title)',
+    'fields' => array(
+      'path' => array(
+        'description' => 'Primary Key: the Drupal path this entry describes',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'load_functions' => array(
+        'description' => 'A serialized array of function names (like node_load) to be called to load an object corresponding to a part of the current path.',
+        'type' => 'blob',
+        'not null' => TRUE,
+      ),
+      'to_arg_functions' => array(
+        'description' => 'A serialized array of function names (like user_uid_optional_to_arg) to be called to replace a part of the router path with another string.',
+        'type' => 'blob',
+        'not null' => TRUE,
+      ),
+      'access_callback' => array(
+        'description' => 'The callback which determines the access to this router path. Defaults to user_access.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'access_arguments' => array(
+        'description' => 'A serialized array of arguments for the access callback.',
+        'type' => 'blob',
+        'not null' => FALSE,
+      ),
+      'page_callback' => array(
+        'description' => 'The name of the function that renders the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'page_arguments' => array(
+        'description' => 'A serialized array of arguments for the page callback.',
+        'type' => 'blob',
+        'not null' => FALSE,
+      ),
+      'delivery_callback' => array(
+        'description' => 'The name of the function that sends the result of the page_callback function to the browser.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'fit' => array(
+        'description' => 'A numeric representation of how specific the path is.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'number_parts' => array(
+        'description' => 'Number of parts in this router path.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'small',
+      ),
+      'context' => array(
+        'description' => 'Only for local tasks (tabs) - the context of a local task to control its placement.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'tab_parent' => array(
+        'description' => 'Only for local tasks (tabs) - the router path of the parent page (which may also be a local task).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'tab_root' => array(
+        'description' => 'Router path of the closest non-tab parent page. For pages that are not local tasks, this will be the same as the path.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'The title for the current page, or the title for the tab if this is a local task.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title_callback' => array(
+        'description' => 'A function which will alter the title. Defaults to t()',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title_arguments' => array(
+        'description' => 'A serialized array of arguments for the title callback. If empty, the title will be used as the sole argument for the title callback.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'theme_callback' => array(
+        'description' => 'A function which returns the name of the theme that will be used to render this page. If left empty, the default theme will be used.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'theme_arguments' => array(
+        'description' => 'A serialized array of arguments for the theme callback.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'type' => array(
+        'description' => 'Numeric representation of the type of the menu item, like MENU_LOCAL_TASK.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'description' => array(
+        'description' => 'A description of this item.',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'position' => array(
+        'description' => 'The position of the block (left or right) on the system administration page for this item.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'weight' => array(
+        'description' => 'Weight of the element. Lighter weights are higher up, heavier weights go down.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'include_file' => array(
+        'description' => 'The file to include for this element, usually the page callback function lives in this file.',
+        'type' => 'text',
+        'size' => 'medium',
+      ),
+    ),
+    'indexes' => array(
+      'fit' => array('fit'),
+      'tab_parent' => array(array('tab_parent', 64), 'weight', 'title'),
+      'tab_root_weight_title' => array(array('tab_root', 64), 'weight', 'title'),
+    ),
+    'primary key' => array('path'),
+  );

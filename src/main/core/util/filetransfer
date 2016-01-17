@@ -1,0 +1,22 @@
+  public NIOCopy(File sourceFile, File destinationFile) {
+
+        try {
+
+            if(!destinationFile.exists()) {
+                destinationFile.createNewFile();
+            }
+
+            FileChannel in = new FileInputStream(sourceFile).getChannel();
+            FileChannel out = new FileOutputStream(destinationFile, true).getChannel();
+
+            //transferTo copy
+            in.transferTo(0, in.size(), out);
+
+            in.close();
+            out.close();
+        }
+        catch(IOException io) {
+            io.printStackTrace();
+        }
+    }
+

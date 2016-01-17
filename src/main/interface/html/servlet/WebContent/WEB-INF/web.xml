@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" id="WebApp_ID" version="3.0">
+  <display-name>freight</display-name>
+<!-- Define a servlet.
+ The class should point at a subclass of servlet.Connection.
+-->
+    <servlet>
+    <servlet-name>base</servlet-name>
+
+        <servlet-class>freight.interface.html.servlet.RoutingDemo</servlet-class>
+    <!-- Load this servlet at server startup time -->
+<!--
+      <load-on-startup>5</load-on-startup>
+-->
+  </servlet>
+
+<!-- Send every request to the Freight servlet defined above
+
+  Mapping to url pattern is by the longest prefix that works ("best fit"),
+not by order given in this file. 
+
+  It is not possible to grab everything *except* static resources without
+using a sub-path URL for the main app e.g. "/pages/*", or a suffix grabber
+e.g. *.html (to servlet), *.css (to static). The action can be made
+transparent with a <filter> (and often is). The solution, if workable, is
+an ugly solution. 
+ -->
+  <servlet-mapping>
+    <servlet-name>base</servlet-name>
+    <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+
+<!-- Enable usage of SQLLite
+  <resource-ref>
+      <description>SqliteJDBC Connection</description>
+      <res-ref-name>jdbc/sqlite</res-ref-name>
+      <res-type>javax.sql.DataSource</res-type>
+      <res-auth>Container</res-auth>
+  </resource-ref>
+-->
+
+<!-- Welcome file routes.
+ If any are present as code, they will be used when the path is '/'
+
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.htm</welcome-file>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>default.html</welcome-file>
+    <welcome-file>default.htm</welcome-file>
+    <welcome-file>default.jsp</welcome-file>
+  </welcome-file-list>
+ -->
+</web-app>

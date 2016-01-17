@@ -1,0 +1,446 @@
+package freight
+package interface
+package db
+package sqliteJDBC
+
+
+
+import java.sql.Connection
+import java.sql.DriverManager
+import java.sql.ResultSet
+import java.sql.SQLException
+import java.sql.Statement
+import java.sql.PreparedStatement
+import java.sql.DatabaseMetaData
+import java.sql.Types
+
+
+/*
+ import freight._
+ import freight.interface.db.sqliteJDBC._
+
+ val db = SyncConnection.testDB
+ val c = FieldQueryCollection.testFieldQueryCollection(db)
+// or...
+ import core.objects.WeighedTitle
+ val c = db.humanCollection("poems_terms", WeighedTitle)
+
+ // Read
+ c.get(1, Some(2))
+
+ c.get(Seq(2,4,7))
+
+ // find
+ c.find("")
+ val b = new interface.html.ObjectBuilder()
+ val b = interface.html.ObjectAnchoredFieldBuilder("article", 2, "article")
+ c.foreach(Seq(0,1,2), Seq(2), b)
+// for example...
+ c.foreach(Seq(0,2), (g: Giver) => {println(g.long); println(g.string)})
+ */
+
+/** An SQLite human collection.
+  *
+  * See [[core.iface.FieldQueryCollection]]
+  * 
+  * @define coll sqlite human
+  *
+  * @param collName name name of the collection 
+  * @param titleCollName name of the column to use for title text
+  * @param descriptionCollName name of the column to use for descriptive text
+  */
+//TODO: Threads, whatever.
+// Single threaded versions ccan use some class val?
+//https://sqlite.org/autoinc.html
+final class FieldQueryCollection(
+  db: Connection,
+  collectionName: String,
+  meta: CompanionMeta
+)
+    extends Collection(db, collectionName, meta)
+    with core.iface.FieldQueryCollection
+{
+
+ protected def variantFieldSelector = core.objects.generic.VariantMultiFieldSelector
+
+  // cached statements
+
+  // NB: Prepared statements columnames don't work on the SQLite
+  // database.
+  private val sortedIndicesSQL: String =
+    s"SELECT id FROM $collectionName ORDER BY "
+
+
+
+  private def executeSeqPS(
+    ps: PreparedStatement,
+    f: (Giver) => Unit
+  )
+      : Boolean =
+  {
+    var rs: ResultSet = null
+    val bk = new generic.JDBCMultiBreaker(rs)
+
+    try {
+      rs = ps.executeQuery()
+
+      while (rs.next()) {
+        bk.reload(rs)
+        f(bk)
+      }
+true
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to read database: $collectionName" + e)
+        false
+      }
+    }
+    finally {
+      // Calling the method close on a ResultSet object that is
+      // already closed is a no-op
+      rs.close()
+    }
+  }
+
+   def apply(
+    fieldIdxs: Seq[Int],
+    id: Long,
+    f: (Giver) => Unit
+  ) 
+: Boolean =
+  {
+    elErrorIf(
+      (fieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"fieldIdxs index out of range collectionName: $collectionName fieldIdxs: $fieldIdxs"
+     )
+    elErrorIf(
+      (id < InitialID),
+      s"Id index out of range collectionName: $collectionName id: $id"
+    )
+
+
+
+
+    val fieldNames = fieldIdxs.map(meta.fieldNames(_))
+    val sql = fieldNames.mkString("SELECT ", ",", s" FROM $collectionName WHERE id = $id")
+
+    log(s"SQLite apply sql: $sql")
+
+    // Prepare (very likely to be repetitious)
+    val ps: PreparedStatement = db.prepareStatement(sql)
+    var rs: ResultSet = null
+
+    try {
+      rs = ps.executeQuery()
+
+      if (rs.next()) {
+        f(new generic.JDBCMultiBreaker(rs))
+        true
+      }
+      else false
+
+
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to read database: $collectionName" + e)
+       false
+      }
+    }
+    finally {
+      // Calling the method close on a ResultSet object that is
+      // already closed is a no-op
+      rs.close()
+    }
+  }
+
+
+  //NB: Terrible method to implement in JDBC, but needed for display
+  //lists.
+  //http://stackoverflow.com/questions/178479/preparedstatement-in-clause-alternatives
+  override def apply(
+    fieldIdxs: Seq[Int],
+    idxs: Seq[Long],
+    f: (Giver) => Unit
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"fieldIdxs index out of range collectionName: $collectionName fieldIdxs: $fieldIdxs"
+     )
+    elErrorIf(
+      (idxs.find((x) => { (x < InitialID) }) != None),
+       s"idxs index out of range collectionName: $collectionName idxs: $idxs"
+     )
+
+    log(s"get: collectionName:$collectionName idxs:$idxs")
+
+    val whereSQL = idxs.mkString("(", ",", ")")
+    val fieldNames = fieldIdxs.map(meta.fieldNames(_))
+    val sql = fieldNames.mkString("SELECT ", ",", s" FROM $collectionName WHERE id IN $whereSQL")
+
+    val ps = db.prepareStatement(sql)
+
+    executeSeqPS(ps, f)
+  }
+
+  def findString(
+    fieldIdxs: Seq[Int],
+    searchFieldIdx: Int,
+    searchData: String,
+    f: (Giver) => Unit
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"fieldIdxs index out of range collectionName: $collectionName fieldIdxs: $fieldIdxs"
+     )
+    elErrorIf(
+      (searchFieldIdx >= meta.columnMap.size || searchFieldIdx < 0),
+      s"Field index out of range collectionName: $collectionName searchFieldIdx: $searchFieldIdx"
+    )
+
+
+    val fieldNames = fieldIdxs.map(meta.fieldNames(_))
+    val whereFieldName = meta.fieldNames(searchFieldIdx)
+    val sql = fieldNames.mkString("SELECT ", ",", s" FROM $collectionName WHERE $whereFieldName=?")
+
+
+
+    val ps = db.prepareStatement(sql)
+    ps.setString(1, searchData)
+
+    log(s"find: collectionName: $collectionName fieldIdxs: $fieldIdxs searchFieldIdx:$searchFieldIdx searchData:$searchData")
+
+    executeSeqPS(ps, f)
+  }
+
+  def findLong(
+    fieldIdxs: Seq[Int],
+    searchFieldIdx: Int,
+    searchData: Long,
+    f: (Giver) => Unit
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"fieldIdxs index out of range collectionName: $collectionName fieldIdxs: $fieldIdxs"
+     )
+    elErrorIf(
+      (searchFieldIdx >= meta.columnMap.size || searchFieldIdx < 0),
+      s"Field index out of range collectionName: $collectionName searchFieldIdx: $searchFieldIdx"
+    )
+
+
+    val fieldNames = fieldIdxs.map(meta.fieldNames(_))
+    val whereFieldName = meta.fieldNames(searchFieldIdx)
+    val sql = fieldNames.mkString("SELECT ", ",", s" FROM $collectionName WHERE $whereFieldName=?")
+
+
+
+    val ps = db.prepareStatement(sql)
+    ps.setLong(1, searchData)
+
+    log(s"find: collectionName: $collectionName fieldIdxs: $fieldIdxs searchFieldIdx:$searchFieldIdx searchData:$searchData")
+
+    executeSeqPS(ps, f)
+  }
+
+  def foreach(
+    fieldIdxs: Seq[Int],
+    sortFieldIdxs: Seq[Int],
+    f: (Giver) ⇒ Unit
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"fieldIdxs index out of range collectionName: $collectionName fieldIdxs: $fieldIdxs"
+     )
+    elErrorIf(
+      (sortFieldIdxs.find((x) => { ( x >= meta.columnMap.size || x < 0)}) != None),
+       s"sortFieldIdxs index out of range collectionName: $collectionName sortFieldIdxs: $sortFieldIdxs"
+     )
+    // Prepare this - it repeats. However, it needs SQL stringbuilding
+    // NB: For prepared statement - nulls don't work, column
+    // definitions don't work, not on SQLite JDBC.
+
+
+    val fieldNames = fieldIdxs.map(meta.fieldNames(_))
+    val prefixSql = fieldNames.mkString("SELECT ", ",", s" FROM $collectionName")
+
+    val sql =
+      if(!sortFieldIdxs.isEmpty) {
+        val sortFieldNames = sortFieldIdxs.map(meta.fieldNames(_))
+        sortFieldNames.mkString(s"$prefixSql ORDER BY ", ",", "")
+      }
+      else prefixSql
+
+    //log(s"meta.columnTypeMap: ${meta.columnTypeMap}")
+    log(s"SQLite foreach sql: $sql")
+    val ps = db.prepareStatement(sql)
+
+    executeSeqPS(ps, f)
+  }
+
+
+  override def sortedIndices(sortFieldIdx: Int)
+      : Option[Seq[Long]] =
+  {
+    elErrorIf(
+      (sortFieldIdx >= meta.columnMap.size || sortFieldIdx < 0),
+      s"Field index out of range collectionName: $collectionName sortFieldIdx: $sortFieldIdx"
+    )
+
+    val b = Seq.newBuilder[Long]
+
+    // NB: See note on sortedIndicesSQL
+    val sql = sortedIndicesSQL + meta.columnMap(sortFieldIdx)._2
+    //log(s"sortedIndices sql: $sql")
+
+    // Don't prepare this - it's numbers and unlikely to repeat.
+    val st: Statement = db.createStatement()
+    var rs: ResultSet = null
+    try {
+      rs = st.executeQuery(sql)
+      while(rs.next()) {
+        val ret = rs.getLong(1)
+        b += ret
+      }
+      Some(b.result())
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to read database: $collectionName" + e)
+        None
+      }
+    }
+    finally {
+      // Calling the method close on a ResultSet object that is
+      // already closed is a no-op
+      rs.close()
+    }
+  }
+
+  /*
+   val c = db.humanCollection("f_label_array", WeighedTitle)
+
+   c.updateInt(3, Map((1L -> 8)))
+
+   */
+  private def executeBatchPS(ps: PreparedStatement)
+      : Boolean =
+  {
+
+    try {
+      ps.executeBatch()
+      true
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to foreach database: $collectionName\n" + e)
+        false
+      }
+    }
+  }
+
+
+  def updateInt(
+    fieldIdx: Int,
+    data: Seq[(Long, Int)]
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdx >= meta.columnMap.size || fieldIdx < 0),
+      "Field index out of range collectionName: $collectionName fieldIdx: $fieldIdx"
+    )
+
+    // Prepare - it's a batch.
+    val stFieldName = meta.fieldNames(fieldIdx)
+    // SQLite diver doesn't like inserted columnames in an update?
+    log(s"data : $data")
+    log(s"sql: UPDATE $collectionName SET $stFieldName=? WHERE id=?")
+    val updatePS = db.prepareStatement(s"UPDATE $collectionName SET $stFieldName=? WHERE id=?")
+
+    data.foreach{ case(id, v) =>
+      updatePS.setInt(1, v)
+      updatePS.setLong(2, id)
+      updatePS.addBatch()
+    }
+
+    log(s"updateColumnInt: collectionName: $collectionName fieldIdx: $fieldIdx")
+
+    executeBatchPS(updatePS)
+  }
+
+  def updateString(
+    fieldIdx: Int,
+    data: Seq[(Long, String)]
+  )
+      : Boolean =
+  {
+    elErrorIf(
+      (fieldIdx >= meta.columnMap.size || fieldIdx < 0),
+      "Field index out of range collectionName: $collectionName fieldIdx: $fieldIdx"
+    )
+
+    // Prepare - it's a batch with strings.
+    val stFieldName = meta.fieldNames(fieldIdx)
+    // SQLite diver doesn't like inserted columnames in an update?
+    val updatePS = db.prepareStatement(s"UPDATE $collectionName SET $stFieldName=? WHERE id=?")
+
+    data.foreach{ case(id, v) =>
+      updatePS.setString(1, v)
+      updatePS.setLong(2, id)
+      updatePS.addBatch()
+    }
+
+    log(s"updateColumnInt: collectionName: $collectionName fieldIdx: $fieldIdx")
+
+    executeBatchPS(updatePS)
+  }
+
+
+  override def toString()
+      : String =
+  {
+    val b = new StringBuilder()
+    b ++= "FieldQueryCollection(collectionName: "
+    b ++= collectionName
+    b ++= ")"
+    b.result()
+  }
+
+}//FieldQueryCollection
+
+
+
+object FieldQueryCollection {
+
+  def testFieldQueryCollection(db: SyncConnection)
+      : FieldQueryCollection =
+  {
+    import freight.objects.Paper
+    db.fieldQueryCollection("poems", Paper)
+  }
+
+  def apply(
+    db: Connection,
+    collectionName: String,
+    meta: CompanionMeta
+  )
+      : FieldQueryCollection =
+  {
+    new FieldQueryCollection(
+      db,
+      collectionName,
+      meta
+    )
+  }
+
+}//FieldQueryCollection

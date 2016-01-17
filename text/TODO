@@ -1,0 +1,27 @@
+= Macros
+Can they be optional, given stringTransform and Transform?
+
+= String Parsing
+Need new StringBreaker for simple ASCII?
+StringBreaker could use slack whitespace? Or slack whitespace version?
+.ini canspeak
+
+= Macros
+Can we maro those transformers or not?
+
+= interface
+Needs an interface locking system.
+
+= types
+Do I need those timestamp/times now? (do they occur in dataases or interfaces, that's the question - Answer: in JDBC)
+Do we need ASCII string? As well as the short string (vs text)?
+
+= packages
+Cleanup generic? Core.objects.generic.CanGive can go now?
+
+What about the id problem? Can't be in GenGivable cause that's for Giver types too...
+
+package iface likely CAN be 'interface' or 'interfaces'
+
+
+

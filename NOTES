@@ -1,0 +1,3 @@
+== Type translation
+Type to type is very expensive, should never be done.
+Maybe they should never be translated?
