@@ -6,6 +6,7 @@ import freight._
 import generic.RouteItem
 import idset.{HttpMethod, Options, Get, Post, Put, Delete, Trace}
 
+import core.util.StringUtil
 
 
 /** Connection handling Html request/responses.
@@ -50,7 +51,7 @@ class Connection
   {
 
     val rm = new ParsedRouteMatcher(matchStr + "/[:long:]")
-    val idIdx = core.util.String.count(matchStr, '/') + 2
+    val idIdx = StringUtil.count(matchStr, '/') + 2
 
     def freightAction(): Any = {
       val id: String = wrequest.urlExtractor.path(idIdx)
@@ -87,7 +88,7 @@ class Connection
   {
 
     val rm = new ParsedRouteMatcher(matchStr + "/[:long:]")
-    val idIdx = core.util.String.count(matchStr, '/') + 2
+    val idIdx = StringUtil.count(matchStr, '/') + 2
 
     def freightAction(): Any = {
       val id: String = wrequest.urlExtractor.path(idIdx)
@@ -158,7 +159,7 @@ class Connection
   {
 
     val rm = new ParsedRouteMatcher(matchStr + "/[:long:]")
-    val idIdx = core.util.String.count(matchStr, '/') + 2
+    val idIdx = StringUtil.count(matchStr, '/') + 2
 
     def freightAction(): Any = {
       val id: String = wrequest.urlExtractor.path(idIdx)

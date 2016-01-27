@@ -70,7 +70,7 @@ trait FreightObjectReader
   /** Action for data reading.
     *
     */
-  protected def readData(oid: Long): Boolean
+  //protected def readData(oid: Long): Boolean
 
 
 

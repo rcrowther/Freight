@@ -203,7 +203,21 @@ object SyncConnection {
     db.collection("poems", Paper)
   }
 
-  def apply (
+  def inMemory()
+      : SyncConnection =
+  {
+    new SyncConnection(new File("").toPath, inMemory = true)
+  }
+
+  def apply(
+    p: Path
+  )
+      : SyncConnection =
+  {
+    new SyncConnection(p, inMemory = false)
+  }
+
+  def apply(
     p: Path,
     inMemory: Boolean
   )

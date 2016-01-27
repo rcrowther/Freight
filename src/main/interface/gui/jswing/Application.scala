@@ -9,13 +9,16 @@ import scala.swing._
 
 /** For simple applications.
   * 
-  *  Overrides `SimpleSwingApplication`. Provides toplevel window access, notably the method `resizeToContents`, and the `closer` mthod.
+  *  Overrides `SimpleSwingApplication`. Provides toplevel window access, notably the method `resizeToContents`, and the `closer` method.
+*
+* The component also inherits `Publisher`, so it can publish `Swing` events
   */
 abstract class Application(
   windowTitle: String,
   closer: () => Boolean
 )
     extends SimpleSwingApplication
+    with Publisher
 {
 
   private var topWin: Option[Frame] = None

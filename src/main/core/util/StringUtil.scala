@@ -6,7 +6,7 @@ package util
 
 /** Utilities for handling strings.
  */
-object String{
+object StringUtil{
   
 def count(s: String, chr: Char) : Int = {
 var i = 0

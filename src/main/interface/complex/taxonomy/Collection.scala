@@ -424,7 +424,7 @@ b.result
     // Add new parents
     // It is possible that the tids are not valid, but
     // that is the reponsibility of calling code.
-    val ret = parentColl+(tid, requestedParents)
+    val ret = parentColl^(tid, requestedParents)
 
     // Kill parenting cache
     clearParentingCache()
@@ -561,7 +561,7 @@ b.result
     var ret = true
     tids.map{ parentId =>
       log(s"  mergeRef $parentId ")
-      objectColl+(parentId, oid)
+      objectColl^(parentId, oid)
       modelCount.remove(parentId)
     }
 

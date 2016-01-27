@@ -53,6 +53,14 @@ package object jswing {
     l
   }
 
+  def stockItalicLabel(text: String): Label = {
+    val l =  new Label(text)
+    l.font = italicFont
+    l.border = labelBorder
+    l.xLayoutAlignment = 0.0
+    l
+  }
+
   def centreLabel(text: String): Label = {
     val l = stockLabel(text: String)
     l.maximumSize = xGluedYFixed
@@ -578,7 +586,7 @@ package object jswing {
   def tightHorizontalSpacer = Swing.RigidBox(new Dimension(8, 0))
   def largeHorizontalSpacer = Swing.RigidBox(new Dimension(80,0))
 
-  def verticalSpacer = Swing.RigidBox(new Dimension(0, 8))
+  def verticalSpacer = Swing.RigidBox(new Dimension(1, 8))
   def tightVerticalSpacer = Swing.RigidBox(new Dimension(0, 2))
 
   def panelBorder = Swing.EmptyBorder(12, 12, 8, 12)

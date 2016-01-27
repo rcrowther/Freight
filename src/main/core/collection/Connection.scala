@@ -47,7 +47,7 @@ trait Connection
   }
 
 
-  /** Returns a refMap.
+  /** Returns a binary collection.
     *
     * @return if available, a refMap, else throws an error.
     */

@@ -52,14 +52,6 @@ package object freight {
   // External Interfaces //
   /////////////////////////
 
-  //type Connection = core.iface.Connection
-//type Collection  = core.iface.Collection
-//type EPICollection  = core.iface.EPICollection
-  //type FieldQueryCollection = core.iface.FieldQueryCollection
-  //type BinaryCollection = core.iface.BinaryCollection
-  //type GenAnyValCollection = core.iface.GenAnyValCollection
-  //type GenBinaryCollection = core.iface.GenBinaryCollection
-
   type Connection = core.collection.Connection
   type FieldQueryable = core.collection.FieldQueryable
   type BinaryTakable = core.collection.BinaryTakable

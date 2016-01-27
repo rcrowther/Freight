@@ -6,7 +6,7 @@ package jswing
 import swing._
 
 import gui.generic._
-
+import core.util.StringUtil
 
 
 /** Returns Swing components for an object model.
@@ -67,7 +67,7 @@ class GNumericField(c:TextField, val default:String)
 {
   def get: String = {
     val ret = c.text
-    if (core.util.String.isBlank(ret)) default
+    if (StringUtil.isBlank(ret)) default
     else ret
   }
   def set(v: String) = {c.text = v}

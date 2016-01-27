@@ -59,9 +59,12 @@ with core.collection.PluggableGiverLoadable
   private val objWidgets = t.widgets()
 
 
-  //----------------
+
+
+  //----------
   //-- Init --
-  //----------------
+  //----------
+
   def selectedId: Option[Long] = model.idAsLong
   def setSelectedId(oidO: Option[Long]) = model.id(oidO)
 

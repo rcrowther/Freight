@@ -95,13 +95,68 @@ final class RefMap(
   private val deleteSQLKV: PreparedStatement = db.prepareStatement(s"DELETE FROM $collectionName WHERE k = ? AND v = ?")
 
 
+  def ^(k: Long, v: Long)
+      : Boolean =
+  {
+    insertSQL.setLong(1, k)
+    insertSQL.setLong(2, v)
+    //log(s"RefMap insert k:$k vals:$v")
+
+    var rs: ResultSet = null
+    try {
+      (insertSQL.executeUpdate() > 0)
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to append to database: $collectionName k: $k")
+        false
+      }
+    }
+  }
+
+  def ^(k: Long, v: TraversableOnce[Long])
+      : Boolean =
+  {
+    println(s"RefMap mass insert k:$k vals:$v")
+    val b = new StringBuilder("INSERT INTO ")
+    b ++= collectionName
+    b ++= "(k,v) VALUES"
+    val keyAsString = k.toString
+    //val sl = s"INSERT INTO $collectionName VALUES(?, ?)"
+    var first = true
+    v.foreach { v =>
+      if (first) first = false
+      else b += ','
+      b += '('
+      b ++= keyAsString
+      b += ','
+      b append v
+      b += ')'
+    }
+    log(s"mass insert k:$k vals:$v")
+
+val stmt = b.result
+
+    val st: Statement = db.createStatement()
+    try {
+      (st.executeUpdate(stmt) > 0)
+    }
+    catch {
+      case e: Exception => {
+        println(e)
+        log(s"unable to bulk append to database: $collectionName k:$k v:$v")
+        false
+      }
+    }
+  }
+
 
   def apply(id: Long)
       : ArrayBuffer[Long] =
   {
     readSQL.setLong(1, id)
     val b = ArrayBuffer[Long]()
-    //log(s"apply id:$id")
+    println(s"RefMap apply id:$id")
 
     var rs: ResultSet = null
     try {
@@ -151,58 +206,27 @@ final class RefMap(
     }
   }
 
-  def +(k: Long, v: Long)
-      : Boolean =
-  {
-    insertSQL.setLong(1, k)
-    insertSQL.setLong(2, v)
-    //log(s"RefMap append k:$k vals:$v")
-
-    var rs: ResultSet = null
-    try {
-      (insertSQL.executeUpdate() > 0)
-    }
-    catch {
-      case e: Exception => {
-        log(s"unable to append to database: $collectionName k: $k")
-        false
-      }
-    }
-  }
-
-  def +(k: Long, v: TraversableOnce[Long])
-      : Boolean =
-  {
-    val b = new StringBuilder("INSERT INTO ")
-    b ++= collectionName
-    b ++= "(k,v) VALUES"
-    val keyAsString = k.toString
-    //val sl = s"INSERT INTO $collectionName VALUES(?, ?)"
-    var first = true
-    v.foreach { v =>
-      if (first) first = false
-      else b += ','
-      b += '('
-      b ++= keyAsString
-      b += ','
-      b append v
-      b += ')'
-    }
-    //log(s"mass append k:$k vals:$v")
-val stmt = b.result
-
+def distinctKeys(f: (Long) ⇒ Unit) {
     val st: Statement = db.createStatement()
+    var rs: ResultSet = null
+    //log(s"foreach in $collectionName")
     try {
-      (st.executeUpdate(stmt) > 0)
+      rs = st.executeQuery(s"SELECT DISTINCT k FROM $collectionName")
+      while(rs.next()) {
+        f(rs.getLong(1))
+      }
+
     }
     catch {
       case e: Exception => {
-        println(e)
-        log(s"unable to bulk append to database: $collectionName k:$k v:$v")
-        false
+        log(s"unable to keys in database: $collectionName")
       }
+
     }
-  }
+    finally {
+      rs.close()
+    }
+}
 
   def foreach(f: ((Long, Long)) ⇒ Unit) {
     val st: Statement = db.createStatement()
@@ -230,9 +254,10 @@ val stmt = b.result
       : Boolean =
   {
     deleteSQL.setLong(1, id)
-    //log(s"delete in $collectionName key: $id")
+    println(s"RefMap delete in $collectionName key: $id")
     try {
-      (deleteSQL.executeUpdate() > 0)
+      deleteSQL.executeUpdate()
+      true
     }
     catch {
       case e: Exception => {
@@ -374,23 +399,23 @@ object RefMap {
       println(" Ensure empty")
       r.foreach(println)
 
-      println("+ one")
-      r+(1,2)
+      println("^ one")
+      r^(1,2)
       r.foreach(println)
 
       println("- one")
       r-(1)
       r.foreach(println)
 
-      println("+ append not merge")
-      r+(1,2)
-      r+(1,2)
+      println("^ append not merge")
+      r^(1,2)
+      r^(1,2)
       r.foreach(println)
       r-(1)
 
 
-      println("+ many")
-      r+(2, Seq[Long](2, 3, 5, 6))
+      println("^ many")
+      r^(2, Seq[Long](2, 3, 5, 6))
 
       r.foreach(println)
 
@@ -402,13 +427,13 @@ object RefMap {
 
 
       println("- many")
-      r+(1,2)
-      r+(2, Seq[Long](2, 5, 6))
+      r^(1,2)
+      r^(2, Seq[Long](2, 5, 6))
       r-(Seq[Long](1, 2))
       r.foreach(println)
 
       println("removeByVal v=3")
-      r+(2, Seq[Long](2, 3, 6))
+      r^(2, Seq[Long](2, 3, 6))
       r.removeByVal(3)
       r.foreach(println)
     }
@@ -421,4 +446,19 @@ object RefMap {
     }
   }
 
+
+def apply(
+//TODO: Case for single val multi key bulk insert.
+  connection: Connection,
+  collectionName: String
+)
+: RefMap =
+{
+
+new RefMap(
+//TODO: Case for single val multi key bulk insert.
+  connection,
+  collectionName
+)
+}
 }//RefMap
