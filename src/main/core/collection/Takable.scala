@@ -24,24 +24,35 @@ trait Takable[G, T]
 with Transferable[G]
 {
 
+  /** Bridges between givers and takers.
+    */
+  def giverTakerBridge: (T, G) => Unit
+
+
+
   /** Applies element data to a taker.
     *
     *
     * @param id the id of an element providing binary data.
     * @param t the taker.
+    * @return true if the apply was succcessful, else false.
     */
   def apply(
     id: Long,
     t: T
-  ): Boolean
+  ): Boolean =
+{
+    apply(id, (g) => {giverTakerBridge(t, g)} )
+}
 
   /** Applies a taker to all elements in this $coll.
     *
-    * Note: default methods often call apply() repeatedly. This method
-    * should be overridden in many implementations, as more efficient
-    * implementations will exist.
+    * @param t the taker.
+    * @return true if the apply was succcessful, else false.
     */
   def foreach(t: T)
- : Boolean 
-
+ : Boolean =
+{
+    foreach((g) => {giverTakerBridge(t, g)})
+}
 }//Takable

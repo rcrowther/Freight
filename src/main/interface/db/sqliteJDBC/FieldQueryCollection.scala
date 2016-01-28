@@ -76,7 +76,7 @@ final class FieldQueryCollection(
 ///////////////////////////
 
 
-  def fieldBridge: FieldBridge = meta.multiFieldBridge
+  def giverTakerBridge: FieldBridge = meta.multiFieldBridge
   //protected def giverConverter(g: StringGiver) = new StringToMultiGiver(g)
 
   // generate sql for prepared statements
@@ -199,7 +199,7 @@ s"INSERT INTO $collectionName VALUES( $fieldSQL)"
       insertPS
     )
     log(s"sql insert giver id: $id")
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     val ps = b.result()
     ps.setLong(1, id)
     upsert(ps)
@@ -215,7 +215,7 @@ s"INSERT INTO $collectionName VALUES( $fieldSQL)"
       appendPS
     )
 
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     val ps = b.result()
     ps.setNull(1, Types.BIGINT)
 
@@ -284,7 +284,7 @@ id: Long,
     val b = new generic.JDBCMultiBuilder2(
       updatePS
     )
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     val ps = b.result()
 //val id = b.givenId
     ps.setLong(lastPSFieldIdx, id)

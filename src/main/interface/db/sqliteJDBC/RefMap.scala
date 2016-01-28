@@ -32,13 +32,12 @@ import collection.mutable.ArrayBuffer
 
 /** An SQLite RefMap.
   *
-  * @define coll sqlite RefMap
   */
 //TODO: Much could go to JDBCRefMap
 // Single threaded versions ccan use some class val?
 //https://sqlite.org/autoinc.html
 final class RefMap(
-//TODO: Case for single val multi key bulk insert.
+  //TODO: Case for single val multi key bulk insert.
   val db: Connection,
   val collectionName: String
 )
@@ -135,7 +134,7 @@ final class RefMap(
     }
     log(s"mass insert k:$k vals:$v")
 
-val stmt = b.result
+    val stmt = b.result
 
     val st: Statement = db.createStatement()
     try {
@@ -177,8 +176,9 @@ val stmt = b.result
     }
   }
 
-  /** Select keys by value in this $coll, by id.
+  /** Select keys by value in this $coll.
     *
+    * Note that this returns *distinct* keys, no multiples.
     */
   def keysByVal(v: Long)
       : ArrayBuffer[Long] =
@@ -193,7 +193,7 @@ val stmt = b.result
       while(rs.next()) {
         b += rs.getLong(1)
       }
-      b.result()
+      b.result().distinct
     }
     catch {
       case e: Exception => {
@@ -206,7 +206,7 @@ val stmt = b.result
     }
   }
 
-def distinctKeys(f: (Long) ⇒ Unit) {
+  def keys(f: (Long) ⇒ Unit) {
     val st: Statement = db.createStatement()
     var rs: ResultSet = null
     //log(s"foreach in $collectionName")
@@ -226,29 +226,8 @@ def distinctKeys(f: (Long) ⇒ Unit) {
     finally {
       rs.close()
     }
-}
-
-  def foreach(f: ((Long, Long)) ⇒ Unit) {
-    val st: Statement = db.createStatement()
-    var rs: ResultSet = null
-    //log(s"foreach in $collectionName")
-    try {
-      rs = st.executeQuery(s"SELECT * FROM $collectionName")
-      while(rs.next()) {
-        f(rs.getLong(1), rs.getLong(2))
-      }
-
-    }
-    catch {
-      case e: Exception => {
-        log(s"unable to foreach in database: $collectionName")
-      }
-
-    }
-    finally {
-      rs.close()
-    }
   }
+
 
   def -(id: Long)
       : Boolean =
@@ -285,25 +264,25 @@ def distinctKeys(f: (Long) ⇒ Unit) {
     }
   }
 
-/*
-  def -(k: TraversableOnce[Long], v: Long)
- : Boolean =
-  {
-    deleteSQLKV.setLong(1, k)
-    deleteSQLKV.setLong(2, v)
-    log(s"delete in $collectionName k: $k v: $v")
-    try {
-      (deleteSQL.executeUpdate() > 0)
-    }
-    catch {
-      case e: Exception => {
-        log(s"unable to kv delete from database: $collectionName k: $k v:$v")
-        false
-      }
+  /*
+   def -(k: TraversableOnce[Long], v: Long)
+   : Boolean =
+   {
+   deleteSQLKV.setLong(1, k)
+   deleteSQLKV.setLong(2, v)
+   log(s"delete in $collectionName k: $k v: $v")
+   try {
+   (deleteSQL.executeUpdate() > 0)
+   }
+   catch {
+   case e: Exception => {
+   log(s"unable to kv delete from database: $collectionName k: $k v:$v")
+   false
+   }
 
-    }
-  }
-*/
+   }
+   }
+   */
 
   def removeByVal(v: Long)
       : Boolean =
@@ -322,6 +301,73 @@ def distinctKeys(f: (Long) ⇒ Unit) {
     }
   }
 
+  def foreach(f: ((Long, Long)) ⇒ Unit) {
+    val st: Statement = db.createStatement()
+    var rs: ResultSet = null
+    //log(s"foreach in $collectionName")
+    try {
+      rs = st.executeQuery(s"SELECT * FROM $collectionName")
+      while(rs.next()) {
+        f(rs.getLong(1), rs.getLong(2))
+      }
+
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to foreach in database: $collectionName")
+      }
+
+    }
+    finally {
+      rs.close()
+    }
+  }
+
+
+  def foreach(
+    f: (TraversableOnce[Long]) => Unit
+  )
+      : Boolean =
+  {
+    val st: Statement = db.createStatement()
+    var rs: ResultSet = null
+    //log(s"foreach in $collectionName")
+    try {
+      rs = st.executeQuery(s"SELECT * FROM $collectionName ORDER BY 1")
+      val b = new collection.mutable.ArrayBuffer[Long]()
+      var currentKey = 0L
+      if(rs.next()) {
+        currentKey = rs.getLong(1)
+        b += rs.getLong(2)
+      }
+      while(rs.next()) {
+        val k = rs.getLong(1)
+        val v = rs.getLong(2)
+        if (k != currentKey) {
+          f(b.result)
+          b.clear()
+          currentKey = k
+
+        }
+        b += v
+      }
+      if(!b.isEmpty) {
+        f(b.result)
+      }
+      true
+    }
+    catch {
+      case e: Exception => {
+        log(s"unable to foreach in database: $collectionName")
+        false
+      }
+
+    }
+    finally {
+      rs.close()
+    }
+  }
+
   def size()
       : Long =
   {
@@ -330,7 +376,7 @@ def distinctKeys(f: (Long) ⇒ Unit) {
     try {
       // Running a count on the first column (usually an indexed id field)
       // is likely fastest. See various articles on StackOverflow.
-      rs = st.executeQuery(s"SELECT Count(1) FROM $collectionName")
+      rs = st.executeQuery(s"SELECT COUNT(DISTINCT k) FROM $collectionName")
       //TODO...
       rs.getInt(1).toLong
     }
@@ -376,7 +422,7 @@ def distinctKeys(f: (Long) ⇒ Unit) {
   {
     b ++= "collectionName: "
     b ++= collectionName
-b
+    b
   }
 
 
@@ -392,73 +438,75 @@ object RefMap {
    RefMap.test()
    */
 
-  def test() {
-    val db = SyncConnection.testDB
-    val r = db.refMap("poems_test")
-    try {
-      println(" Ensure empty")
-      r.foreach(println)
+  /*
+   def test() {
+   val db = SyncConnection.testDB
+   val r = db.refMap("poems_test")
+   try {
+   println(" Ensure empty")
+   r.foreach(println)
 
-      println("^ one")
-      r^(1,2)
-      r.foreach(println)
+   println("^ one")
+   r^(1,2)
+   r.foreach(println)
 
-      println("- one")
-      r-(1)
-      r.foreach(println)
+   println("- one")
+   r-(1)
+   r.foreach(println)
 
-      println("^ append not merge")
-      r^(1,2)
-      r^(1,2)
-      r.foreach(println)
-      r-(1)
-
-
-      println("^ many")
-      r^(2, Seq[Long](2, 3, 5, 6))
-
-      r.foreach(println)
-
-      println("apply k=2")
-      println(r(2))
-
-      println("keysByVal k=5")
-      println(r.keysByVal(5))
+   println("^ append not merge")
+   r^(1,2)
+   r^(1,2)
+   r.foreach(println)
+   r-(1)
 
 
-      println("- many")
-      r^(1,2)
-      r^(2, Seq[Long](2, 5, 6))
-      r-(Seq[Long](1, 2))
-      r.foreach(println)
+   println("^ many")
+   r^(2, Seq[Long](2, 3, 5, 6))
 
-      println("removeByVal v=3")
-      r^(2, Seq[Long](2, 3, 6))
-      r.removeByVal(3)
-      r.foreach(println)
-    }
-    catch {
-      case e: Exception => println(e)
-    }
-    finally{
-      r.clean()
-      db.close()
-    }
+   r.foreach(println)
+
+   println("apply k=2")
+   println(r(2))
+
+   println("keysByVal k=5")
+   println(r.keysByVal(5))
+
+
+   println("- many")
+   r^(1,2)
+   r^(2, Seq[Long](2, 5, 6))
+   r-(Seq[Long](1, 2))
+   r.foreach(println)
+
+   println("removeByVal v=3")
+   r^(2, Seq[Long](2, 3, 6))
+   r.removeByVal(3)
+   r.foreach(println)
+   }
+   catch {
+   case e: Exception => println(e)
+   }
+   finally{
+   r.clean()
+   db.close()
+   }
+   }
+   */
+
+  def apply(
+    //TODO: Case for single val multi key bulk insert.
+    connection: Connection,
+    collectionName: String
+  )
+      : RefMap =
+  {
+
+    new RefMap(
+      //TODO: Case for single val multi key bulk insert.
+      connection,
+      collectionName
+    )
   }
 
-
-def apply(
-//TODO: Case for single val multi key bulk insert.
-  connection: Connection,
-  collectionName: String
-)
-: RefMap =
-{
-
-new RefMap(
-//TODO: Case for single val multi key bulk insert.
-  connection,
-  collectionName
-)
-}
 }//RefMap

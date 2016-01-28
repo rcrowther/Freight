@@ -192,6 +192,7 @@ extends Takable[(ReadableByteChannel, Long), WritableByteChannel]
   }
 */
 //TOCONSIDER: Utility, place elsewhere?
+/*
 private def channelWrite(src: ReadableByteChannel, dst: WritableByteChannel)
 : Boolean =
  {
@@ -218,19 +219,45 @@ catch {
 case e: Exception => false
 }
 }
+*/
 
- // def apply(id: Long,f: ((java.nio.channels.ReadableByteChannel, Long)) => Unit): Boolean = ???
-  def apply(id: Long, t: WritableByteChannel)
-: Boolean = 
-{
-var ok = true
-this(
-id,
-     (params: Tuple2[ReadableByteChannel, Long]) =>  { ok = channelWrite(params._1, t) }
+val giverTakerBridge: (WritableByteChannel, (ReadableByteChannel, Long)) => Unit = channelWrite
+
+def channelWrite(
+dst: WritableByteChannel,
+src: (ReadableByteChannel, Long)
 )
-ok
-
+ {
+// The bytesize element in the tuple can be ignored.
+// While it is useful for unified methodology,
+// channel read/writing must work from EOF signals,
+// and the readable should only ever be one complete object
+// in size.  
+val srcBC = src._1
+  val buffer = ByteBuffer.allocateDirect(16 * 1024)
+try {
+    while (srcBC.read(buffer) != -1) {
+      // prepare the buffer to be drained
+      buffer.flip()
+      // write to the channel, may block
+      dst.write(buffer)
+      // If partial transfer, shift remainder down
+      // If buffer is empty, same as doing clear()
+      buffer.compact()
+    }
+    // EOF will leave buffer in fill state
+    buffer.flip()
+    // make sure the buffer is fully drained.
+    while (buffer.hasRemaining()) {
+      dst.write(buffer)
+    }
 }
+catch {
+case e: Exception => error("failed to transfer binary data to a WritableByteChannel")
+}
+}
+
+
 
   /** Applies a function to an element in this collection.
     *
@@ -392,8 +419,23 @@ g._2(Channels.newInputStream(params._1))})
       }
     }
   }
+/*
+  def apply(id: Long, t: WritableByteChannel)
+: Boolean = 
+{
+var ok = true
+this(
+id,
+     (params: Tuple2[ReadableByteChannel, Long]) =>  { ok = channelWrite(params._1, t) }
+)
+ok
 
+}
+*/
+
+/*
 //TODO: bit slow? Not optomised... tired...
+
   def foreach(t: java.nio.channels.WritableByteChannel): Boolean = {
 var ok = true
 foreach(
@@ -401,5 +443,6 @@ foreach(
 )
 ok
 }
+*/
 
 }//BinaryTakable

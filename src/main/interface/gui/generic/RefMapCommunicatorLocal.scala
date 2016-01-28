@@ -60,10 +60,10 @@ class RefmapCommunicatorLocal(
     else deleteResponse(id)
   }
 
-  def distinctKeySizeRequest()
+  def sizeRequest()
   {
-    val s = coll.distinctKeySize()
-    distinctKeySizeResponse(s)
+    val s = coll.size()
+    sizeResponse(s)
   }
 
 }//RefMapReader

@@ -88,7 +88,7 @@ class SyncCollection(
     with Namespace
 {
 
-  def fieldBridge: FieldBridge = meta.stringFieldBridge
+  def giverTakerBridge: FieldBridge = meta.stringFieldBridge
 
 
   // Auto raise
@@ -208,7 +208,7 @@ error("could not open namespace file at path $p")
     val b = speak.to(
       Some(id.toString)
     )
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     upsert(b)
   }
 
@@ -220,7 +220,7 @@ error("could not open namespace file at path $p")
     val b = speak.to(
       Some(nextId().toString)
     )
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     write(b)
   }
 
@@ -261,7 +261,7 @@ error("could not open namespace file at path $p")
     val b = speak.to(
      None
     )
-    fieldBridge(b, g)
+    giverTakerBridge(b, g)
     (write(b) != NullID)
   }
 

@@ -39,6 +39,7 @@ trait GenCollection extends Any
 *
 * @return a string representing the backing code of this $coll.
 */
+//TODO: rename connectionType
 def genreString : String
 
 /** Defines a string representing the classname of the collection.
@@ -48,6 +49,7 @@ def genreString : String
 *
 * @return a string representing the class name of this $coll.
 */
+//TODO: rename collectionType
 def klassString : String
 
 /** Defines a name for the collection.

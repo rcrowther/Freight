@@ -33,7 +33,7 @@ extends TakableFieldQueryable
   def variantFieldSelector: freight.core.objects.generic.VariantFieldSelector = coll.variantFieldSelector
 
   // Members declared in freight.core.collection.GiverTakable
-  def fieldBridge: freight.FieldBridge = coll.fieldBridge
+  def giverTakerBridge: freight.FieldBridge = coll.giverTakerBridge
   def meta: freight.CompanionMeta = coll.meta
 
   // Members declared in freight.core.collection.Transferable

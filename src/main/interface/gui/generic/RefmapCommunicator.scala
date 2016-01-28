@@ -28,10 +28,10 @@ trait RefmapCommunicator
     extends RefmapAsync
 {
   var idDataFunc : Option[(Long, Seq[Long]) => Unit] = None
-  var distinctKeySizeFunc : Option[ (Long) => Unit] = None
   var upsertFunc : Option[(Long) => Unit] = None
   var updateFunc : Option[(Long) => Unit] = None
   var deleteFunc : Option[(Long) => Unit] = None
+  var sizeFunc : Option[ (Long) => Unit] = None
   var opFailFunc : Option[(String) => Unit] = None
 
 
@@ -82,15 +82,15 @@ trait RefmapCommunicator
     deleteFunc.get(id)
   }
 
-  def registerDistinctKeySizeResponse(f: (Long) => Unit)
-  { distinctKeySizeFunc = Some(f) }
-  def distinctKeySizeResponse(s: Long)
+  def registerSizeResponse(f: (Long) => Unit)
+  { sizeFunc = Some(f) }
+  def sizeResponse(s: Long)
   {
     elErrorIf(
-      distinctKeySizeFunc == None,
+      sizeFunc == None,
       "Unregistered callback call: distinctKeySizeRequest"
     )
-    distinctKeySizeFunc.get(s)
+    sizeFunc.get(s)
   }
 
 

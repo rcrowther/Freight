@@ -145,7 +145,7 @@ object SingleRefMapTitledGUI
           publish(StatusMessage.info("new/updated key values!"))
           // NB: Since we do not know if update or insert
           // we must reread the size.
-          ctl.distinctKeySizeRequest
+          ctl.sizeRequest
         }
 
         def deleteResponse(id: Long)
@@ -224,10 +224,10 @@ object SingleRefMapTitledGUI
 
         val statusBar = new SimpleStatusbar()
         val countView = new CountDisplay()
-        ctl.registerDistinctKeySizeResponse(countView.set)
+        ctl.registerSizeResponse(countView.set)
         countView.appendTo(statusBar)
         // Initialize the countView
-        ctl.distinctKeySizeRequest
+        ctl.sizeRequest
 
 
         // pack all in a VBox

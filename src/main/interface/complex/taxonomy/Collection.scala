@@ -698,10 +698,14 @@ object Collection {
         // Force insert at given id, with blank term
         // then reparent with exisiting parents
         // TODO defend against duplicates
-        parentColl.foreach{ case(tid, parents) =>
+/*
+        parentColl.foreach( (param: (Long, Long)) => {
+val tid = param._1
 // insert forces id this anyhow?
           termColl.insert(tid, WeighedTitle.newId(tid, WeighedTitle.empty))
-        }
+}
+        )
+*/
         // Umm, the heirarchy will be wrong here.
         warning("The terms of this Collection $table were not found. The table was restored from the parents. The new Terms have no content.",
           "Collection"

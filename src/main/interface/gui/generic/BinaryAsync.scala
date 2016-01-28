@@ -22,26 +22,22 @@ package generic
   * 
   * @define view refmap
   */
-trait RefmapAsync
+trait BinaryAsync
     extends Any
 {
 
-  def idDataRequest(id: Long)
-  def idDataResponse(id: Long, values: Seq[Long])
-
-  def upsertRequest(id: Long, values: Seq[Long])
-  def upsertResponse(id: Long)
-
-  def updateRequest(id: Long, values: Seq[Long])
-  def updateResponse(id: Long)
-
+  def idDataRequest(id: Long, fieldIdxs: Seq[Int])
+  def idDataResponse(id: Long, data: (Long, String, String))
 
   def deleteRequest(id: Long)
   def deleteResponse(id: Long)
+
+  def foreachRequest(fieldIdxs: Seq[Int])
+  def foreachResponse(data: Seq[(Long, String, String)])
 
   def sizeRequest()
   def sizeResponse(size: Long)
 
   def opFailResponse(method: String)
 
-}//RefMapReader
+}//FieldQueryAsync

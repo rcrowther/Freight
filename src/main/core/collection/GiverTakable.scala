@@ -24,7 +24,7 @@ extends Takable[core.iface.Giver, core.iface.Taker]
 /*
 
   // Members declared in freight.core.collection.GiverTakable
-  protected def fieldBridge: freight.FieldBridge = ???
+  protected def giverTakerBridge: freight.FieldBridge = ???
   def meta: freight.CompanionMeta = ???
 
   // Members declared in freight.core.collection.Transferable
@@ -54,35 +54,26 @@ extends Takable[core.iface.Giver, core.iface.Taker]
     * `meta.multiFieldBridge`, depending on the natural handling of
     * the collection.
     */
-  def fieldBridge: FieldBridge
+  def giverTakerBridge: FieldBridge
 
 
-  /** Applies a taker to an element in this $coll.
-    *
-    * @param id the id to select.
-    * @param t a taker to recieve the selected data.
-    * @return true if the selection was succcessful, else false.
-    */
+/*
   def apply(
     id: Long,
     t: Taker
   )
       : Boolean =
   {
-    apply(id, (g) => {fieldBridge(t, g)} )
+    apply(id, (g) => {giverTakerBridge(t, g)} )
   }
+*/
 
-  /** Applies a taker to all elements in this $coll.
-    *
-    * Note: default methods often call apply() repeatedly. This method
-    * should be overridden in many implementations, as more efficient
-    * implementations will exist.
-    */
+/*
   def foreach(t: Taker)
  : Boolean =
 {
-    foreach((g) => {fieldBridge(t, g)})
+    foreach((g) => {giverTakerBridge(t, g)})
   }
-
+*/
 
 }//GiverTakable
